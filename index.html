@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>HOLLOWMADE Push-Up Tracker</title>
+
+  <!-- iOS home screen icon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/push_up_tracker/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="180x180" href="/push_up_tracker/apple-touch-icon.png">
+
+  <!-- PWA meta -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HOLLOWMADE">
+  <meta name="theme-color" content="#0d0d0d">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Oswald:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d0d;
+      --surface:   #141414;
+      --border:    #1f1f1f;
+      --border2:   #2a2a2a;
+      --bar:       #1c1c1c;
+      --accent:    #d8592f;
+      --accent-dk: #c24a23;
+      --text-hi:   #e8e2d9;
+      --text-mid:  #cfc8be;
+      --text-lo:   #8a8278;
+      --text-dim:  #6b6560;
+      --text-faint:#5c574f;
+      --mono: 'JetBrains Mono', monospace;
+      --display: 'Oswald', sans-serif;
+    }
+
+    html, body {
+      background: var(--bg);
+      min-height: 100dvh;
+      -webkit-tap-highlight-color: transparent;
+      font-family: var(--display);
+    }
+
+    button {
+      font-family: var(--display);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:active { opacity: .78; }
+
+    /* ── Layout ── */
+    .wrap {
+      width: 100%;
+      max-width: 430px;
+      margin: 0 auto;
+      padding: 2.3rem 1.5rem 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.7rem;
+    }
+
+    /* ── Brand ── */
+    .brand { text-align: center; }
+    .brand-name {
+      font-weight: 600;
+      font-size: 1.9rem;
+      letter-spacing: .36em;
+      text-indent: .36em;
+      color: var(--text-hi);
+    }
+    .brand-sub {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .34em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-top: .5rem;
+    }
+    .brand-tagline {
+      font-weight: 300;
+      font-style: italic;
+      font-size: .86rem;
+      letter-spacing: .02em;
+      color: var(--text-dim);
+      margin-top: .7rem;
+    }
+
+    /* ── Daily count ── */
+    .daily { text-align: center; padding-top: .4rem; }
+    .daily-num {
+      font-weight: 700;
+      font-size: clamp(5rem, 30vw, 7rem);
+      line-height: .95;
+      color: var(--accent);
+      transition: transform .14s cubic-bezier(.34,1.56,.64,1);
+      display: block;
+    }
+    .daily-num.bump { transform: scale(1.06); }
+    .daily-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .3em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-top: .55rem;
+    }
+    .daily-progress-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--text-lo);
+      margin-top: 1.15rem;
+    }
+    .bar-wrap {
+      width: 100%;
+      height: 6px;
+      background: var(--bar);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: .55rem;
+    }
+    .bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: inherit;
+      transition: width .35s ease;
+    }
+    .daily-motiv {
+      font-weight: 300;
+      font-size: .98rem;
+      letter-spacing: .04em;
+      color: var(--text-mid);
+      margin-top: .95rem;
+    }
+
+    /* ── Actions ── */
+    .actions { display: flex; flex-direction: column; gap: .65rem; }
+
+    .btn-log {
+      width: 100%;
+      background: transparent;
+      border: 2px solid var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 1.25rem;
+      letter-spacing: .2em;
+      padding: 1.15rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .btn-log:active { background: var(--accent); color: var(--bg); }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: .5rem;
+    }
+    .btn-quick {
+      font-weight: 500;
+      font-size: 1.05rem;
+      color: var(--text-mid);
+      background: transparent;
+      border: 1px solid var(--border2);
+      border-radius: 4px;
+      padding: .85rem 0;
+    }
+    .btn-quick:active { background: #1a1a1a; border-color: #3a3a3a; }
+
+    .nudge-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: .5rem;
+      width: 62%;
+      margin: .15rem auto 0;
+    }
+    .btn-nudge {
+      font-weight: 500;
+      font-size: .95rem;
+      color: var(--text-lo);
+      background: transparent;
+      border: 1px solid #222;
+      border-radius: 4px;
+      padding: .65rem 0;
+    }
+    .btn-nudge:active { background: #161616; }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.3rem;
+    }
+
+    /* ── Weekly ── */
+    .week-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .section-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .28em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .section-sublabel {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--text-lo);
+    }
+    .week-total-row {
+      display: flex;
+      align-items: baseline;
+      gap: .45rem;
+      margin-top: .65rem;
+    }
+    .week-num {
+      font-weight: 600;
+      font-size: 2.1rem;
+      color: var(--text-hi);
+      line-height: 1;
+    }
+    .week-denom {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .1em;
+      color: var(--text-dim);
+    }
+
+    /* ── Streak ── */
+    .streak-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .streak-num-row {
+      display: flex;
+      align-items: baseline;
+      gap: .4rem;
+    }
+    .streak-num {
+      font-weight: 700;
+      font-size: 2.5rem;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .streak-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .24em;
+      text-transform: uppercase;
+      color: var(--text-lo);
+    }
+    .streak-aside {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .05em;
+      color: var(--text-dim);
+      text-align: right;
+      line-height: 1.6;
+    }
+    .dots-row {
+      display: flex;
+      gap: .45rem;
+      margin-top: 1.2rem;
+    }
+    .dot-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .dot {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      transition: background .2s;
+    }
+    .dot-letter {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: .05em;
+    }
+
+    /* ── History ── */
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: .6rem;
+      margin-top: 1rem;
+    }
+    .history-row {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+    }
+    .history-day {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .04em;
+      min-width: 46px;
+    }
+    .history-bar-wrap {
+      flex: 1;
+      height: 6px;
+      background: var(--bar);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .history-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width .3s;
+    }
+    .history-count {
+      font-weight: 500;
+      font-size: .95rem;
+      color: var(--text-mid);
+      min-width: 32px;
+      text-align: right;
+    }
+
+    /* ── Lifetime ── */
+    .lifetime {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 .3rem;
+    }
+    .lifetime-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+    .lifetime-val {
+      font-weight: 500;
+      font-size: 1rem;
+      color: var(--text-lo);
+    }
+
+    /* ── Reset ── */
+    .reset-row { text-align: center; }
+    .btn-reset {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: .1em;
+      color: #403c36;
+      background: none;
+      border: none;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+    }
+
+    /* ── Entry overlay ── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(7,7,7,.84);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 1.5rem;
+    }
+    .overlay-card {
+      width: 100%;
+      max-width: 340px;
+      background: var(--surface);
+      border: 1px solid #262626;
+      border-radius: 10px;
+      padding: 1.7rem 1.4rem 1.5rem;
+      text-align: center;
+    }
+    .entry-num {
+      font-weight: 700;
+      font-size: 4.6rem;
+      line-height: 1;
+      color: var(--accent);
+      margin-top: .6rem;
+    }
+    .entry-unit {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-top: .2rem;
+    }
+    .entry-btns {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: .5rem;
+      margin-top: 1.4rem;
+    }
+    .btn-entry {
+      font-weight: 500;
+      font-size: 1rem;
+      color: var(--text-mid);
+      background: transparent;
+      border: 1px solid var(--border2);
+      border-radius: 4px;
+      padding: .75rem 0;
+    }
+    .btn-entry:active { background: #1a1a1a; }
+    .btn-confirm {
+      width: 100%;
+      margin-top: .9rem;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      padding: 1rem;
+    }
+    .btn-confirm:active { background: var(--accent-dk); }
+    .btn-cancel {
+      width: 100%;
+      margin-top: .5rem;
+      background: transparent;
+      color: var(--text-dim);
+      border: none;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      padding: .5rem;
+    }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- BRAND -->
+  <div class="brand">
+    <div class="brand-name">HOLLOWMADE</div>
+    <div class="brand-sub">Push-Up Tracker</div>
+    <div class="brand-tagline">Build the habit. One rep at a time.</div>
+  </div>
+
+  <!-- DAILY -->
+  <div class="daily">
+    <span class="daily-num" id="dailyNum">0</span>
+    <div class="daily-label">Built Today</div>
+    <div class="daily-progress-label" id="dailyProgressLabel">0 / 50 daily goal</div>
+    <div class="bar-wrap"><div class="bar-fill" id="dailyBar" style="width:0%"></div></div>
+    <div class="daily-motiv" id="dailyMotiv">Start the rebuild.</div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="actions">
+    <button class="btn-log" onclick="openEntry()">Log Set</button>
+    <div class="quick-grid">
+      <button class="btn-quick" onclick="add(5)">+5</button>
+      <button class="btn-quick" onclick="add(10)">+10</button>
+      <button class="btn-quick" onclick="add(15)">+15</button>
+      <button class="btn-quick" onclick="add(25)">+25</button>
+    </div>
+    <div class="nudge-grid">
+      <button class="btn-nudge" onclick="add(-1)">−1</button>
+      <button class="btn-nudge" onclick="add(1)">+1</button>
+    </div>
+  </div>
+
+  <!-- WEEKLY -->
+  <div class="card">
+    <div class="week-header">
+      <span class="section-label">This Week</span>
+      <span class="section-sublabel" id="weekGoalLabel">Goal 500</span>
+    </div>
+    <div class="week-total-row">
+      <span class="week-num" id="weekNum">0</span>
+      <span class="week-denom" id="weekDenom">/ 500 reps</span>
+    </div>
+    <div class="bar-wrap" style="margin-top:.75rem">
+      <div class="bar-fill" id="weekBar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- STREAK -->
+  <div class="card">
+    <div class="streak-row">
+      <div>
+        <div class="streak-num-row">
+          <span class="streak-num" id="streakNum">0</span>
+          <span class="streak-label">Day Streak</span>
+        </div>
+      </div>
+      <div class="streak-aside">Don't break<br>the rebuild.</div>
+    </div>
+    <div class="dots-row" id="dotsRow"></div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="card">
+    <div class="section-label">Recent Work</div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <!-- LIFETIME -->
+  <div class="lifetime">
+    <span class="lifetime-label">Lifetime Built</span>
+    <span class="lifetime-val" id="lifetimeVal">0 reps</span>
+  </div>
+
+  <!-- RESET -->
+  <div class="reset-row">
+    <button class="btn-reset" onclick="resetToday()">Reset today</button>
+  </div>
+
+</div>
+
+<!-- ENTRY OVERLAY -->
+<div class="overlay hidden" id="overlay" onclick="closeEntry()">
+  <div class="overlay-card" onclick="event.stopPropagation()">
+    <div class="section-label">Log a Set</div>
+    <div class="entry-num" id="entryNum">15</div>
+    <div class="entry-unit">reps</div>
+    <div class="entry-btns">
+      <button class="btn-entry" onclick="changeEntry(-5)">−5</button>
+      <button class="btn-entry" onclick="changeEntry(-1)">−1</button>
+      <button class="btn-entry" onclick="changeEntry(1)">+1</button>
+      <button class="btn-entry" onclick="changeEntry(5)">+5</button>
+    </div>
+    <button class="btn-confirm" onclick="confirmEntry()">Add Set</button>
+    <button class="btn-cancel" onclick="closeEntry()">Cancel</button>
+  </div>
+</div>
+
+<script>
+  // ── Config ──────────────────────────────────────────
+  const DAILY_GOAL   = 50;
+  const WEEKLY_GOAL  = 500;
+  const ACCENT       = '#d8592f';
+  const LETTERS      = ['S','M','T','W','T','F','S'];
+  const DAY_ABBR     = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const STORAGE_KEY  = 'hm-pushups';
+
+  // ── State ────────────────────────────────────────────
+  let logs = [];       // [{ date: 'YYYY-MM-DD', count: n }]
+  let entryVal = 15;
+
+  // ── Storage ───────────────────────────────────────────
+  function load() {
+    try { logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch(e) { logs = []; }
+  }
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(logs)); } catch(e) {}
+  }
+
+  // ── Date helpers ──────────────────────────────────────
+  function ymd(d) {
+    const m   = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return d.getFullYear() + '-' + m + '-' + day;
+  }
+  function countFor(ds) {
+    const e = logs.find(l => l.date === ds);
+    return e ? e.count : 0;
+  }
+  function setToday(n) {
+    n = Math.max(0, Math.round(n));
+    const t = ymd(new Date());
+    const i = logs.findIndex(l => l.date === t);
+    if (i >= 0) logs[i].count = n; else logs.push({ date: t, count: n });
+    save();
+    render();
+  }
+
+  // ── Actions ───────────────────────────────────────────
+  function add(n) {
+    const t   = ymd(new Date());
+    const cur = countFor(t);
+    setToday(cur + n);
+    bump();
+  }
+  function resetToday() {
+    if (confirm('Reset today to 0?')) setToday(0);
+  }
+
+  // ── Entry overlay ─────────────────────────────────────
+  function openEntry()  { entryVal = 15; document.getElementById('entryNum').textContent = entryVal; document.getElementById('overlay').classList.remove('hidden'); }
+  function closeEntry() { document.getElementById('overlay').classList.add('hidden'); }
+  function changeEntry(n) { entryVal = Math.min(300, Math.max(1, entryVal + n)); document.getElementById('entryNum').textContent = entryVal; }
+  function confirmEntry() { closeEntry(); add(entryVal); }
+
+  // ── Bump animation ────────────────────────────────────
+  let bumpTimer;
+  function bump() {
+    const el = document.getElementById('dailyNum');
+    el.classList.add('bump');
+    clearTimeout(bumpTimer);
+    bumpTimer = setTimeout(() => el.classList.remove('bump'), 150);
+  }
+
+  // ── Render ────────────────────────────────────────────
+  function pct(val, goal) { return Math.min(100, goal > 0 ? (val / goal * 100) : 0).toFixed(1) + '%'; }
+
+  function render() {
+    const now     = new Date();
+    const todayDs = ymd(now);
+    const today   = countFor(todayDs);
+
+    // Daily
+    document.getElementById('dailyNum').textContent         = today;
+    document.getElementById('dailyProgressLabel').textContent = today + ' / ' + DAILY_GOAL + ' daily goal';
+    document.getElementById('dailyBar').style.width         = pct(today, DAILY_GOAL);
+    document.getElementById('dailyMotiv').textContent       = motiv(today);
+
+    // Week (Sun–Sat)
+    const dow   = now.getDay();
+    const start = new Date(now); start.setDate(now.getDate() - dow);
+    let weekTotal = 0;
+    const dotsRow = document.getElementById('dotsRow');
+    dotsRow.innerHTML = '';
+    for (let i = 0; i < 7; i++) {
+      const d  = new Date(start); d.setDate(start.getDate() + i);
+      const ds = ymd(d);
+      const c  = countFor(ds);
+      weekTotal += c;
+      const isToday  = ds === todayDs;
+      const isFuture = ds > todayDs;
+      const on       = c > 0;
+
+      const col = document.createElement('div');
+      col.className = 'dot-col';
+
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      dot.style.background  = on ? ACCENT : (isFuture ? '#171717' : '#272727');
+      dot.style.boxShadow   = isToday ? ('0 0 0 1px ' + ACCENT + '66') : 'none';
+
+      const lbl = document.createElement('div');
+      lbl.className = 'dot-letter';
+      lbl.style.color = isToday ? '#cfc8be' : '#5c574f';
+      lbl.textContent = LETTERS[i];
+
+      col.appendChild(dot);
+      col.appendChild(lbl);
+      dotsRow.appendChild(col);
+    }
+
+    document.getElementById('weekNum').textContent       = weekTotal;
+    document.getElementById('weekDenom').textContent     = '/ ' + WEEKLY_GOAL + ' reps';
+    document.getElementById('weekGoalLabel').textContent = 'Goal ' + WEEKLY_GOAL;
+    document.getElementById('weekBar').style.width       = pct(weekTotal, WEEKLY_GOAL);
+
+    // Streak
+    let streak = 0;
+    {
+      let d = new Date(now);
+      if (countFor(ymd(d)) <= 0) d.setDate(d.getDate() - 1);
+      while (countFor(ymd(d)) > 0) { streak++; d.setDate(d.getDate() - 1); }
+    }
+    document.getElementById('streakNum').textContent = streak;
+
+    // History (last 7 days, oldest first)
+    const rows = [];
+    for (let i = 6; i >= 0; i--) {
+      const d  = new Date(now); d.setDate(now.getDate() - i);
+      rows.push({ label: i === 0 ? 'Today' : DAY_ABBR[d.getDay()], count: countFor(ymd(d)) });
+    }
+    const hmax = Math.max(1, ...rows.map(r => r.count));
+    const list = document.getElementById('historyList');
+    list.innerHTML = '';
+    rows.forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'history-row';
+
+      const lbl = document.createElement('span');
+      lbl.className = 'history-day';
+      lbl.style.color = r.label === 'Today' ? '#cfc8be' : '#6b6560';
+      lbl.textContent = r.label;
+
+      const bw = document.createElement('div');
+      bw.className = 'history-bar-wrap';
+      const bf = document.createElement('div');
+      bf.className = 'history-bar-fill';
+      bf.style.width      = (r.count / hmax * 100) + '%';
+      bf.style.background = r.count > 0 ? ACCENT : 'transparent';
+      bw.appendChild(bf);
+
+      const cnt = document.createElement('span');
+      cnt.className = 'history-count';
+      cnt.textContent = r.count;
+
+      row.appendChild(lbl);
+      row.appendChild(bw);
+      row.appendChild(cnt);
+      list.appendChild(row);
+    });
+
+    // Lifetime
+    const lifetime = logs.reduce((s, l) => s + (l.count || 0), 0);
+    document.getElementById('lifetimeVal').textContent = lifetime.toLocaleString() + ' reps';
+  }
+
+  function motiv(n) {
+    if (n <= 0)                    return 'Start the rebuild.';
+    if (n >= DAILY_GOAL)           return 'Goal earned.';
+    if (n / DAILY_GOAL >= 0.7)     return 'Almost there.';
+    return 'Keep stacking reps.';
+  }
+
+  // ── Init ──────────────────────────────────────────────
+  load();
+  render();
+</script>
+</body>
+</html>
